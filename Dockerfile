@@ -10,4 +10,4 @@ COPY Bot.py .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "bot:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "Bot:app"]
