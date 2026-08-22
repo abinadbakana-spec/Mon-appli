@@ -19,10 +19,15 @@ URL = os.environ.get(
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
 
-CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "180"))
+CHECK_INTERVAL = int(
+    os.environ.get("CHECK_INTERVAL", "180")
+)
 
 # Évite les alertes Telegram répétées
 dernier_etat = None
+
+# Empêche le démarrage multiple du thread
+bot_demarre = False
 
 
 # ============================================================
@@ -60,9 +65,13 @@ def envoyer_alerte(message):
         print("❌ CHAT_ID manquant.")
         return False
 
-    api_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    api_url = (
+        f"https://api.telegram.org/"
+        f"bot{TELEGRAM_TOKEN}/sendMessage"
+    )
 
     try:
+
         response = requests.post(
             api_url,
             data={
@@ -73,39 +82,73 @@ def envoyer_alerte(message):
             timeout=15
         )
 
-        print("📨 Telegram HTTP :", response.status_code)
+        print(
+            "📨 Telegram HTTP :",
+            response.status_code
+        )
 
         if response.status_code != 200:
+
             print("❌ Réponse Telegram :")
             print(response.text)
+
             return False
 
         try:
+
             data = response.json()
 
             if data.get("ok") is True:
-                print("✅ Message Telegram envoyé avec succès.")
+
+                print(
+                    "✅ Message Telegram envoyé avec succès."
+                )
+
                 return True
 
-            print("❌ Telegram a répondu mais le message n'a pas été accepté.")
+            print(
+                "❌ Telegram a répondu mais "
+                "le message n'a pas été accepté."
+            )
+
             print(data)
+
             return False
 
         except Exception:
-            print("⚠️ Réponse Telegram non JSON :")
+
+            print(
+                "⚠️ Réponse Telegram non JSON :"
+            )
+
             print(response.text)
+
             return False
 
     except requests.exceptions.Timeout:
-        print("⏱️ Timeout lors de la connexion à Telegram.")
+
+        print(
+            "⏱️ Timeout lors de la connexion à Telegram."
+        )
+
         return False
 
     except requests.exceptions.RequestException as e:
-        print("❌ Erreur réseau Telegram :", e)
+
+        print(
+            "❌ Erreur réseau Telegram :",
+            e
+        )
+
         return False
 
     except Exception as e:
-        print("❌ Erreur Telegram :", e)
+
+        print(
+            "❌ Erreur Telegram :",
+            e
+        )
+
         return False
 
 
@@ -114,10 +157,6 @@ def envoyer_alerte(message):
 # ============================================================
 
 def tester_telegram():
-    """
-    Teste Telegram au démarrage.
-    Permet de vérifier immédiatement le TOKEN et le CHAT_ID.
-    """
 
     print("")
     print("==========================================")
@@ -125,34 +164,74 @@ def tester_telegram():
     print("==========================================")
 
     if not TELEGRAM_TOKEN:
-        print("❌ TELEGRAM_TOKEN MANQUANT")
-        print("➡️ Vérifie les Environment Variables de Render.")
+
+        print(
+            "❌ TELEGRAM_TOKEN MANQUANT"
+        )
+
+        print(
+            "➡️ Vérifie les Environment Variables "
+            "de Render."
+        )
+
         return False
 
     if not CHAT_ID:
-        print("❌ CHAT_ID MANQUANT")
-        print("➡️ Vérifie les Environment Variables de Render.")
+
+        print(
+            "❌ CHAT_ID MANQUANT"
+        )
+
+        print(
+            "➡️ Vérifie les Environment Variables "
+            "de Render."
+        )
+
         return False
 
-    print("✅ TELEGRAM_TOKEN détecté.")
-    print(f"✅ CHAT_ID détecté : {CHAT_ID}")
+    print(
+        "✅ TELEGRAM_TOKEN détecté."
+    )
+
+    print(
+        f"✅ CHAT_ID détecté : {CHAT_ID}"
+    )
 
     message = (
         "🟢 TEST TELEGRAM\n\n"
-        "Le bot Cita Consular est correctement connecté "
-        "à Telegram et fonctionne sur Render."
+        "Le bot Cita Consular est correctement "
+        "connecté à Telegram et fonctionne sur Render."
     )
 
     resultat = envoyer_alerte(message)
 
     if resultat:
-        print("==========================================")
-        print("✅ TEST TELEGRAM RÉUSSI")
-        print("==========================================")
+
+        print(
+            "=========================================="
+        )
+
+        print(
+            "✅ TEST TELEGRAM RÉUSSI"
+        )
+
+        print(
+            "=========================================="
+        )
+
     else:
-        print("==========================================")
-        print("❌ TEST TELEGRAM ÉCHOUÉ")
-        print("==========================================")
+
+        print(
+            "=========================================="
+        )
+
+        print(
+            "❌ TEST TELEGRAM ÉCHOUÉ"
+        )
+
+        print(
+            "=========================================="
+        )
 
     print("")
 
@@ -164,19 +243,24 @@ def tester_telegram():
 # ============================================================
 
 def detecter_validation_humaine(page):
+
     """
     Détecte une éventuelle page de validation humaine.
 
-    Cette fonction ne tente PAS de contourner un CAPTCHA.
-    Elle avertit simplement l'utilisateur.
+    Cette fonction ne tente PAS de contourner
+    un CAPTCHA ou une vérification humaine.
     """
 
     try:
-        texte = page.locator("body").inner_text(
+
+        texte = page.locator(
+            "body"
+        ).inner_text(
             timeout=5000
         ).lower()
 
         mots_validation = [
+
             "verify you are human",
             "verification",
             "human verification",
@@ -189,38 +273,62 @@ def detecter_validation_humaine(page):
             "verificación humana",
             "security check",
             "checking your browser",
+
         ]
 
         for mot in mots_validation:
+
             if mot in texte:
+
                 return True
 
-        frames = page.locator("iframe")
+        frames = page.locator(
+            "iframe"
+        )
 
         if frames.count() > 0:
-            for i in range(min(frames.count(), 10)):
+
+            for i in range(
+                min(frames.count(), 10)
+            ):
+
                 try:
-                    src = frames.nth(i).get_attribute("src")
+
+                    src = frames.nth(i).get_attribute(
+                        "src"
+                    )
 
                     if src:
+
                         src = src.lower()
 
                         indicateurs = [
+
                             "captcha",
                             "challenge",
                             "turnstile",
                             "recaptcha",
                             "hcaptcha"
+
                         ]
 
-                        if any(x in src for x in indicateurs):
+                        if any(
+                            x in src
+                            for x in indicateurs
+                        ):
+
                             return True
 
                 except Exception:
+
                     continue
 
     except Exception as e:
-        print("Erreur détection validation :", e)
+
+        print(
+            "Erreur détection validation :",
+            e
+        )
 
     return False
 
@@ -230,24 +338,31 @@ def detecter_validation_humaine(page):
 # ============================================================
 
 def attendre_welcome(page):
-    """
-    Attend que la page Cita Consular soit chargée.
-    """
 
-    print("⏳ Attente de la page Welcome...")
+    print(
+        "⏳ Attente de la page Welcome..."
+    )
 
     try:
+
         page.wait_for_load_state(
             "domcontentloaded",
             timeout=30000
         )
+
     except Exception:
+
         pass
 
-    page.wait_for_timeout(4000)
+    page.wait_for_timeout(
+        4000
+    )
 
     try:
-        texte = page.locator("body").inner_text(
+
+        texte = page.locator(
+            "body"
+        ).inner_text(
             timeout=5000
         ).lower()
 
@@ -256,10 +371,15 @@ def attendre_welcome(page):
             or "bienvenido" in texte
             or "bienvenue" in texte
         ):
-            print("✅ Page Welcome détectée.")
+
+            print(
+                "✅ Page Welcome détectée."
+            )
+
             return True
 
     except Exception:
+
         pass
 
     return False
@@ -270,9 +390,6 @@ def attendre_welcome(page):
 # ============================================================
 
 def cliquer_ok(page):
-    """
-    Essaie de fermer une éventuelle boîte de dialogue Welcome.
-    """
 
     textes = [
         "OK",
@@ -283,29 +400,50 @@ def cliquer_ok(page):
     ]
 
     for texte in textes:
+
         try:
+
             bouton = page.get_by_role(
                 "button",
                 name=texte,
                 exact=True
             )
 
-            if bouton.count() > 0 and bouton.first.is_visible():
-                print(f"🖱️ Clic sur {texte}")
+            if (
+                bouton.count() > 0
+                and bouton.first.is_visible()
+            ):
 
-                bouton.first.click(timeout=3000)
-                page.wait_for_timeout(1500)
+                print(
+                    f"🖱️ Clic sur {texte}"
+                )
+
+                bouton.first.click(
+                    timeout=3000
+                )
+
+                page.wait_for_timeout(
+                    1500
+                )
 
                 return True
 
         except Exception:
+
             pass
 
     try:
-        boutons = page.locator("button")
 
-        for i in range(min(boutons.count(), 20)):
+        boutons = page.locator(
+            "button"
+        )
+
+        for i in range(
+            min(boutons.count(), 20)
+        ):
+
             try:
+
                 texte = (
                     boutons.nth(i)
                     .inner_text()
@@ -319,15 +457,23 @@ def cliquer_ok(page):
                     "accept",
                     "accepter"
                 ]:
-                    boutons.nth(i).click(timeout=3000)
-                    page.wait_for_timeout(1500)
+
+                    boutons.nth(i).click(
+                        timeout=3000
+                    )
+
+                    page.wait_for_timeout(
+                        1500
+                    )
 
                     return True
 
             except Exception:
+
                 continue
 
     except Exception:
+
         pass
 
     return False
@@ -338,9 +484,6 @@ def cliquer_ok(page):
 # ============================================================
 
 def cliquer_continue(page):
-    """
-    Recherche le bouton Continue / Continuar.
-    """
 
     textes = [
         "Continue",
@@ -350,50 +493,77 @@ def cliquer_continue(page):
     ]
 
     for texte in textes:
+
         try:
+
             bouton = page.get_by_role(
                 "button",
                 name=texte,
                 exact=True
             )
 
-            if bouton.count() > 0 and bouton.first.is_visible():
+            if (
+                bouton.count() > 0
+                and bouton.first.is_visible()
+            ):
 
-                print(f"🖱️ Bouton {texte} trouvé.")
+                print(
+                    f"🖱️ Bouton {texte} trouvé."
+                )
 
-                bouton.first.click(timeout=5000)
-                page.wait_for_timeout(3000)
+                bouton.first.click(
+                    timeout=5000
+                )
+
+                page.wait_for_timeout(
+                    3000
+                )
 
                 return True
 
         except Exception:
+
             pass
 
     try:
+
         elements = page.locator(
             "text=/Continue|Continuar/i"
         )
 
         if elements.count() > 0:
-            for i in range(min(elements.count(), 10)):
+
+            for i in range(
+                min(elements.count(), 10)
+            ):
+
                 try:
+
                     element = elements.nth(i)
 
                     if element.is_visible():
+
                         print(
                             "🖱️ Continue trouvé "
                             "par recherche texte."
                         )
 
-                        element.click(timeout=5000)
-                        page.wait_for_timeout(3000)
+                        element.click(
+                            timeout=5000
+                        )
+
+                        page.wait_for_timeout(
+                            3000
+                        )
 
                         return True
 
                 except Exception:
+
                     continue
 
     except Exception:
+
         pass
 
     return False
@@ -404,20 +574,22 @@ def cliquer_continue(page):
 # ============================================================
 
 def analyser_disponibilite(page):
-    """
-    Analyse la page réellement rendue par Chromium.
-
-    Évite de considérer automatiquement une page inconnue
-    comme un créneau disponible.
-    """
 
     try:
-        texte = page.locator("body").inner_text(
+
+        texte = page.locator(
+            "body"
+        ).inner_text(
             timeout=10000
         )
 
     except Exception as e:
-        print("Impossible de lire la page :", e)
+
+        print(
+            "Impossible de lire la page :",
+            e
+        )
+
         return "ERREUR"
 
     texte_normalise = " ".join(
@@ -429,6 +601,7 @@ def analyser_disponibilite(page):
     # --------------------------------------------------------
 
     mots_absence = [
+
         "aucun créneau horaire n'est disponible",
         "aucun créneau disponible",
         "no hay citas disponibles",
@@ -436,11 +609,17 @@ def analyser_disponibilite(page):
         "no appointments available",
         "no available appointments",
         "sin citas disponibles",
+
     ]
 
     for mot in mots_absence:
+
         if mot in texte_normalise:
-            print("❌ Aucun créneau.")
+
+            print(
+                "❌ Aucun créneau."
+            )
+
             return "AUCUN_CRENEAU"
 
     # --------------------------------------------------------
@@ -448,6 +627,7 @@ def analyser_disponibilite(page):
     # --------------------------------------------------------
 
     mots_disponibilite = [
+
         "seleccione una fecha",
         "select a date",
         "selecciona una fecha",
@@ -456,21 +636,28 @@ def analyser_disponibilite(page):
         "disponible",
         "available",
         "disponibilidad"
+
     ]
 
     for mot in mots_disponibilite:
+
         if mot in texte_normalise:
+
             print(
                 "🟢 Indice de disponibilité :",
                 mot
             )
+
             return "DISPONIBLE"
 
     # --------------------------------------------------------
     # CAS INCONNU
     # --------------------------------------------------------
 
-    print("⚠️ Etat inconnu.")
+    print(
+        "⚠️ Etat inconnu."
+    )
+
     return "INCONNU"
 
 
@@ -482,32 +669,42 @@ def surveiller():
 
     global dernier_etat
 
-    print("🚀 Démarrage de la surveillance...")
+    print(
+        "🚀 Démarrage de la surveillance..."
+    )
 
     with sync_playwright() as p:
 
         browser = p.chromium.launch(
+
             headless=True,
+
             args=[
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu"
             ]
+
         )
 
         context = browser.new_context(
+
             viewport={
                 "width": 1366,
                 "height": 768
             },
+
             locale="fr-FR",
+
             timezone_id="Europe/Madrid",
+
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 "
                 "(KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             )
+
         )
 
         page = context.new_page()
@@ -516,7 +713,8 @@ def surveiller():
 
             try:
 
-                print("\n==============================")
+                print("")
+                print("==============================")
                 print("🔎 Nouvelle vérification")
                 print("==============================")
 
@@ -526,7 +724,9 @@ def surveiller():
                     timeout=60000
                 )
 
-                page.wait_for_timeout(5000)
+                page.wait_for_timeout(
+                    5000
+                )
 
                 # ------------------------------------------------
                 # VALIDATION HUMAINE
@@ -541,41 +741,62 @@ def surveiller():
                     if dernier_etat != "VALIDATION":
 
                         envoyer_alerte(
+
                             "⚠️ VALIDATION HUMAINE REQUISE\n\n"
+
                             "Cita Consular demande une "
                             "vérification humaine avant "
                             "de continuer.\n\n"
+
                             f"🔗 {URL}"
+
                         )
 
-                        dernier_etat = "VALIDATION"
+                        dernier_etat = (
+                            "VALIDATION"
+                        )
 
-                    time.sleep(CHECK_INTERVAL)
+                    time.sleep(
+                        CHECK_INTERVAL
+                    )
+
                     continue
 
                 # ------------------------------------------------
                 # WELCOME
                 # ------------------------------------------------
 
-                attendre_welcome(page)
+                attendre_welcome(
+                    page
+                )
 
-                cliquer_ok(page)
+                cliquer_ok(
+                    page
+                )
 
                 # ------------------------------------------------
                 # CONTINUE
                 # ------------------------------------------------
 
-                if cliquer_continue(page):
+                if cliquer_continue(
+                    page
+                ):
 
-                    print("✅ Continue effectué.")
+                    print(
+                        "✅ Continue effectué."
+                    )
 
-                    page.wait_for_timeout(5000)
+                    page.wait_for_timeout(
+                        5000
+                    )
 
                 # ------------------------------------------------
                 # REVERIFICATION HUMAN CHECK
                 # ------------------------------------------------
 
-                if detecter_validation_humaine(page):
+                if detecter_validation_humaine(
+                    page
+                ):
 
                     print(
                         "🚨 Validation humaine "
@@ -585,23 +806,34 @@ def surveiller():
                     if dernier_etat != "VALIDATION":
 
                         envoyer_alerte(
+
                             "⚠️ VALIDATION HUMAINE REQUISE\n\n"
+
                             "Une vérification humaine est "
                             "apparue pendant la navigation "
                             "Cita Consular.\n\n"
+
                             f"🔗 {URL}"
+
                         )
 
-                        dernier_etat = "VALIDATION"
+                        dernier_etat = (
+                            "VALIDATION"
+                        )
 
-                    time.sleep(CHECK_INTERVAL)
+                    time.sleep(
+                        CHECK_INTERVAL
+                    )
+
                     continue
 
                 # ------------------------------------------------
                 # DISPONIBILITE
                 # ------------------------------------------------
 
-                etat = analyser_disponibilite(page)
+                etat = analyser_disponibilite(
+                    page
+                )
 
                 if etat == "DISPONIBLE":
 
@@ -610,24 +842,37 @@ def surveiller():
                         "DISPONIBLE !"
                     )
 
+                    # Anti-spam Telegram
+
                     if dernier_etat != "DISPONIBLE":
 
                         envoyer_alerte(
+
                             "🚨 CRÉNEAU POTENTIELLEMENT "
                             "DISPONIBLE !\n\n"
+
                             "La page Cita Consular présente "
                             "des indices de disponibilité.\n\n"
+
                             "⚡ Vérifiez immédiatement :\n"
+
                             f"{URL}"
+
                         )
 
-                    dernier_etat = "DISPONIBLE"
+                    dernier_etat = (
+                        "DISPONIBLE"
+                    )
 
                 elif etat == "AUCUN_CRENEAU":
 
-                    print("❌ Aucun créneau.")
+                    print(
+                        "❌ Aucun créneau."
+                    )
 
-                    dernier_etat = "AUCUN_CRENEAU"
+                    dernier_etat = (
+                        "AUCUN_CRENEAU"
+                    )
 
                 elif etat == "INCONNU":
 
@@ -637,7 +882,9 @@ def surveiller():
                         "envoyée."
                     )
 
-                    dernier_etat = "INCONNU"
+                    dernier_etat = (
+                        "INCONNU"
+                    )
 
                 else:
 
@@ -649,13 +896,19 @@ def surveiller():
                 # ATTENTE
                 # ------------------------------------------------
 
-                time.sleep(CHECK_INTERVAL)
+                time.sleep(
+                    CHECK_INTERVAL
+                )
 
             except PlaywrightTimeoutError:
 
-                print("⏱️ Timeout de la page.")
+                print(
+                    "⏱️ Timeout de la page."
+                )
 
-                time.sleep(60)
+                time.sleep(
+                    60
+                )
 
             except Exception as e:
 
@@ -664,16 +917,30 @@ def surveiller():
                     e
                 )
 
-                time.sleep(60)
+                time.sleep(
+                    60
+                )
 
         browser.close()
 
 
 # ============================================================
-# MAIN
+# DEMARRAGE DU BOT
 # ============================================================
 
-if __name__ == "__main__":
+def demarrer_bot():
+
+    global bot_demarre
+
+    if bot_demarre:
+
+        print(
+            "⚠️ Le bot est déjà démarré."
+        )
+
+        return
+
+    bot_demarre = True
 
     print("")
     print("==========================================")
@@ -685,20 +952,36 @@ if __name__ == "__main__":
     # --------------------------------------------------------
 
     if not TELEGRAM_TOKEN:
-        print("❌ TELEGRAM_TOKEN manquant.")
+
+        print(
+            "❌ TELEGRAM_TOKEN manquant."
+        )
+
     else:
-        print("✅ TELEGRAM_TOKEN présent.")
+
+        print(
+            "✅ TELEGRAM_TOKEN présent."
+        )
 
     if not CHAT_ID:
-        print("❌ CHAT_ID manquant.")
+
+        print(
+            "❌ CHAT_ID manquant."
+        )
+
     else:
-        print(f"✅ CHAT_ID présent : {CHAT_ID}")
+
+        print(
+            f"✅ CHAT_ID présent : {CHAT_ID}"
+        )
 
     print(
         f"⏱️ CHECK_INTERVAL : {CHECK_INTERVAL} secondes"
     )
 
-    print(f"🌐 CITA_URL : {URL}")
+    print(
+        f"🌐 CITA_URL : {URL}"
+    )
 
     # --------------------------------------------------------
     # TEST TELEGRAM
@@ -710,14 +993,35 @@ if __name__ == "__main__":
     # DEMARRAGE SURVEILLANCE
     # --------------------------------------------------------
 
-    threading.Thread(
-        target=surveiller,
-        daemon=True
-    ).start()
+    print(
+        "🚀 Lancement du thread de surveillance..."
+    )
 
-    # --------------------------------------------------------
-    # DEMARRAGE FLASK
-    # --------------------------------------------------------
+    thread = threading.Thread(
+        target=surveiller,
+        daemon=True,
+        name="CitaConsularMonitor"
+    )
+
+    thread.start()
+
+    print(
+        "✅ Thread de surveillance démarré."
+    )
+
+
+# ============================================================
+# DEMARRAGE AUTOMATIQUE AVEC GUNICORN
+# ============================================================
+
+demarrer_bot()
+
+
+# ============================================================
+# MODE LOCAL
+# ============================================================
+
+if __name__ == "__main__":
 
     port = int(
         os.environ.get(
