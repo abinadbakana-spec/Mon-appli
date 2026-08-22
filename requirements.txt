@@ -1,0 +1,4 @@
+Flask
+requests
+playwright==1.62.0
+gunicorn
