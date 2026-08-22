@@ -26,7 +26,7 @@ CHECK_INTERVAL = int(
 # Évite les alertes Telegram répétées
 dernier_etat = None
 
-# Empêche le démarrage multiple du thread
+# Empêche le démarrage multiple du bot
 bot_demarre = False
 
 
@@ -52,17 +52,21 @@ def health():
 # ============================================================
 
 def envoyer_alerte(message):
-    """
-    Envoie une notification Telegram.
-    Retourne True si Telegram accepte le message.
-    """
 
     if not TELEGRAM_TOKEN:
-        print("❌ TELEGRAM_TOKEN manquant.")
+
+        print(
+            "❌ TELEGRAM_TOKEN manquant."
+        )
+
         return False
 
     if not CHAT_ID:
-        print("❌ CHAT_ID manquant.")
+
+        print(
+            "❌ CHAT_ID manquant."
+        )
+
         return False
 
     api_url = (
@@ -73,12 +77,15 @@ def envoyer_alerte(message):
     try:
 
         response = requests.post(
+
             api_url,
+
             data={
                 "chat_id": CHAT_ID,
                 "text": message,
                 "disable_web_page_preview": False
             },
+
             timeout=15
         )
 
@@ -89,8 +96,13 @@ def envoyer_alerte(message):
 
         if response.status_code != 200:
 
-            print("❌ Réponse Telegram :")
-            print(response.text)
+            print(
+                "❌ Réponse Telegram :"
+            )
+
+            print(
+                response.text
+            )
 
             return False
 
@@ -121,7 +133,9 @@ def envoyer_alerte(message):
                 "⚠️ Réponse Telegram non JSON :"
             )
 
-            print(response.text)
+            print(
+                response.text
+            )
 
             return False
 
@@ -153,7 +167,7 @@ def envoyer_alerte(message):
 
 
 # ============================================================
-# TEST TELEGRAM AU DEMARRAGE
+# TEST TELEGRAM
 # ============================================================
 
 def tester_telegram():
@@ -169,22 +183,12 @@ def tester_telegram():
             "❌ TELEGRAM_TOKEN MANQUANT"
         )
 
-        print(
-            "➡️ Vérifie les Environment Variables "
-            "de Render."
-        )
-
         return False
 
     if not CHAT_ID:
 
         print(
             "❌ CHAT_ID MANQUANT"
-        )
-
-        print(
-            "➡️ Vérifie les Environment Variables "
-            "de Render."
         )
 
         return False
@@ -203,7 +207,9 @@ def tester_telegram():
         "connecté à Telegram et fonctionne sur Render."
     )
 
-    resultat = envoyer_alerte(message)
+    resultat = envoyer_alerte(
+        message
+    )
 
     if resultat:
 
@@ -245,7 +251,7 @@ def tester_telegram():
 def detecter_validation_humaine(page):
 
     """
-    Détecte une éventuelle page de validation humaine.
+    Détecte une éventuelle validation humaine.
 
     Cette fonction ne tente PAS de contourner
     un CAPTCHA ou une vérification humaine.
@@ -282,6 +288,7 @@ def detecter_validation_humaine(page):
 
                 return True
 
+        # Recherche des iframes
         frames = page.locator(
             "iframe"
         )
@@ -294,7 +301,9 @@ def detecter_validation_humaine(page):
 
                 try:
 
-                    src = frames.nth(i).get_attribute(
+                    src = frames.nth(
+                        i
+                    ).get_attribute(
                         "src"
                     )
 
@@ -354,6 +363,7 @@ def attendre_welcome(page):
 
         pass
 
+    # Laisse le JavaScript travailler
     page.wait_for_timeout(
         4000
     )
@@ -392,11 +402,13 @@ def attendre_welcome(page):
 def cliquer_ok(page):
 
     textes = [
+
         "OK",
         "Ok",
         "Aceptar",
         "Accept",
         "Accepter"
+
     ]
 
     for texte in textes:
@@ -432,6 +444,7 @@ def cliquer_ok(page):
 
             pass
 
+    # Fallback
     try:
 
         boutons = page.locator(
@@ -452,10 +465,12 @@ def cliquer_ok(page):
                 )
 
                 if texte in [
+
                     "ok",
                     "aceptar",
                     "accept",
                     "accepter"
+
                 ]:
 
                     boutons.nth(i).click(
@@ -486,10 +501,12 @@ def cliquer_ok(page):
 def cliquer_continue(page):
 
     textes = [
+
         "Continue",
         "Continuar",
         "CONTINUE",
         "CONTINUAR"
+
     ]
 
     for texte in textes:
@@ -525,6 +542,7 @@ def cliquer_continue(page):
 
             pass
 
+    # Recherche plus large
     try:
 
         elements = page.locator(
@@ -539,7 +557,9 @@ def cliquer_continue(page):
 
                 try:
 
-                    element = elements.nth(i)
+                    element = elements.nth(
+                        i
+                    )
 
                     if element.is_visible():
 
@@ -567,6 +587,275 @@ def cliquer_continue(page):
         pass
 
     return False
+
+
+# ============================================================
+# DIAGNOSTIC DE LA PAGE
+# ============================================================
+
+def diagnostiquer_page(page):
+
+    """
+    Diagnostic détaillé lorsque la page est inconnue.
+
+    Les informations sont uniquement affichées
+    dans les logs Render.
+    """
+
+    print("")
+    print("==========================================")
+    print("          DIAGNOSTIC PAGE INCONNUE")
+    print("==========================================")
+
+    # --------------------------------------------------------
+    # URL
+    # --------------------------------------------------------
+
+    try:
+
+        print(
+            "🌐 URL réelle :",
+            page.url
+        )
+
+    except Exception as e:
+
+        print(
+            "❌ URL impossible :",
+            e
+        )
+
+    # --------------------------------------------------------
+    # TITRE
+    # --------------------------------------------------------
+
+    try:
+
+        print(
+            "📄 TITRE :",
+            page.title()
+        )
+
+    except Exception as e:
+
+        print(
+            "❌ Titre impossible :",
+            e
+        )
+
+    # --------------------------------------------------------
+    # BODY
+    # --------------------------------------------------------
+
+    try:
+
+        texte = page.locator(
+            "body"
+        ).inner_text(
+            timeout=10000
+        )
+
+        print(
+            "📝 LONGUEUR DU TEXTE :",
+            len(texte)
+        )
+
+        texte_propre = " ".join(
+            texte.split()
+        )
+
+        print("")
+        print(
+            "📝 TEXTE DE LA PAGE :"
+        )
+
+        if texte_propre:
+
+            print(
+                texte_propre[:5000]
+            )
+
+        else:
+
+            print(
+                "⚠️ Aucun texte trouvé dans le body."
+            )
+
+    except Exception as e:
+
+        print(
+            "❌ Impossible de lire le body :",
+            e
+        )
+
+    # --------------------------------------------------------
+    # IFRAMES
+    # --------------------------------------------------------
+
+    try:
+
+        frames = page.locator(
+            "iframe"
+        )
+
+        nombre = frames.count()
+
+        print("")
+        print(
+            "🖼️ NOMBRE D'IFRAMES :",
+            nombre
+        )
+
+        for i in range(
+            min(nombre, 10)
+        ):
+
+            try:
+
+                src = frames.nth(
+                    i
+                ).get_attribute(
+                    "src"
+                )
+
+                print(
+                    f"   iframe {i} : {src}"
+                )
+
+            except Exception as e:
+
+                print(
+                    f"   iframe {i} : "
+                    "impossible à lire"
+                )
+
+    except Exception as e:
+
+        print(
+            "❌ Erreur iframe :",
+            e
+        )
+
+    # --------------------------------------------------------
+    # BOUTONS
+    # --------------------------------------------------------
+
+    try:
+
+        boutons = page.locator(
+            "button"
+        )
+
+        nombre_boutons = boutons.count()
+
+        print("")
+        print(
+            "🔘 NOMBRE DE BOUTONS :",
+            nombre_boutons
+        )
+
+        for i in range(
+            min(nombre_boutons, 30)
+        ):
+
+            try:
+
+                bouton = boutons.nth(
+                    i
+                )
+
+                texte_bouton = (
+                    bouton.inner_text()
+                    .strip()
+                )
+
+                if texte_bouton:
+
+                    print(
+                        f"   bouton {i} : "
+                        f"{texte_bouton[:200]}"
+                    )
+
+            except Exception:
+
+                continue
+
+    except Exception as e:
+
+        print(
+            "❌ Erreur boutons :",
+            e
+        )
+
+    # --------------------------------------------------------
+    # INPUTS
+    # --------------------------------------------------------
+
+    try:
+
+        inputs = page.locator(
+            "input"
+        )
+
+        nombre_inputs = inputs.count()
+
+        print("")
+        print(
+            "⌨️ NOMBRE D'INPUTS :",
+            nombre_inputs
+        )
+
+        for i in range(
+            min(nombre_inputs, 20)
+        ):
+
+            try:
+
+                input_element = inputs.nth(
+                    i
+                )
+
+                input_type = (
+                    input_element.get_attribute(
+                        "type"
+                    )
+                )
+
+                input_name = (
+                    input_element.get_attribute(
+                        "name"
+                    )
+                )
+
+                input_placeholder = (
+                    input_element.get_attribute(
+                        "placeholder"
+                    )
+                )
+
+                print(
+                    f"   input {i} : "
+                    f"type={input_type} "
+                    f"name={input_name} "
+                    f"placeholder={input_placeholder}"
+                )
+
+            except Exception:
+
+                continue
+
+    except Exception as e:
+
+        print(
+            "❌ Erreur inputs :",
+            e
+        )
+
+    print("")
+    print("==========================================")
+    print("       FIN DU DIAGNOSTIC")
+    print("==========================================")
+    print("")
 
 
 # ============================================================
@@ -718,10 +1007,18 @@ def surveiller():
                 print("🔎 Nouvelle vérification")
                 print("==============================")
 
+                # ------------------------------------------------
+                # CHARGEMENT PAGE
+                # ------------------------------------------------
+
                 page.goto(
+
                     URL,
+
                     wait_until="domcontentloaded",
+
                     timeout=60000
+
                 )
 
                 page.wait_for_timeout(
@@ -732,7 +1029,9 @@ def surveiller():
                 # VALIDATION HUMAINE
                 # ------------------------------------------------
 
-                if detecter_validation_humaine(page):
+                if detecter_validation_humaine(
+                    page
+                ):
 
                     print(
                         "🚨 VALIDATION HUMAINE DETECTEE"
@@ -882,6 +1181,14 @@ def surveiller():
                         "envoyée."
                     )
 
+                    # ------------------------------------------------
+                    # DIAGNOSTIC AJOUTÉ
+                    # ------------------------------------------------
+
+                    diagnostiquer_page(
+                        page
+                    )
+
                     dernier_etat = (
                         "INCONNU"
                     )
@@ -895,6 +1202,11 @@ def surveiller():
                 # ------------------------------------------------
                 # ATTENTE
                 # ------------------------------------------------
+
+                print(
+                    f"⏳ Prochaine vérification "
+                    f"dans {CHECK_INTERVAL} secondes."
+                )
 
                 time.sleep(
                     CHECK_INTERVAL
@@ -948,7 +1260,7 @@ def demarrer_bot():
     print("==========================================")
 
     # --------------------------------------------------------
-    # VERIFICATION DES VARIABLES
+    # VARIABLES
     # --------------------------------------------------------
 
     if not TELEGRAM_TOKEN:
@@ -990,7 +1302,7 @@ def demarrer_bot():
     tester_telegram()
 
     # --------------------------------------------------------
-    # DEMARRAGE SURVEILLANCE
+    # THREAD SURVEILLANCE
     # --------------------------------------------------------
 
     print(
@@ -998,9 +1310,13 @@ def demarrer_bot():
     )
 
     thread = threading.Thread(
+
         target=surveiller,
+
         daemon=True,
+
         name="CitaConsularMonitor"
+
     )
 
     thread.start()
@@ -1035,6 +1351,9 @@ if __name__ == "__main__":
     )
 
     app.run(
+
         host="0.0.0.0",
+
         port=port
+
     )
